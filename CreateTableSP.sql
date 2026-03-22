@@ -1,4 +1,4 @@
-CREATE OR ALTER PROCEDURE dbo.GetFullTableScript
+CREATE OR ALTER PROCEDURE GetFullTableScript
     @ObjectName NVARCHAR(128)
 AS
 BEGIN
@@ -8,14 +8,13 @@ BEGIN
     DECLARE @ObjectType CHAR(2);
     DECLARE @SQL NVARCHAR(MAX) = '';
 
-    -- Get schema and object type
     SELECT TOP 1 
         @SchemaName = s.name,
         @ObjectType = o.type
     FROM sys.objects o
     JOIN sys.schemas s ON o.schema_id = s.schema_id
     WHERE o.name = @ObjectName
-      AND o.type IN ('U','V');  -- U = table, V = view
+      AND o.type IN ('U','V'); 
 
     IF @ObjectType IS NULL
     BEGIN
@@ -23,12 +22,10 @@ BEGIN
         RETURN;
     END
 
-    IF @ObjectType = 'U'  -- User table
+    IF @ObjectType = 'U' 
     BEGIN
-        -- Start CREATE TABLE statement
         SET @SQL = 'CREATE TABLE [' + @SchemaName + '].[' + @ObjectName + '] (' + CHAR(13);
 
-        -- Add columns
         SELECT @SQL = @SQL + '    [' + c.name + '] ' +
             TYPE_NAME(c.user_type_id) +
             CASE 
@@ -80,12 +77,10 @@ BEGIN
         JOIN sys.schemas s2 ON t2.schema_id = s2.schema_id
         WHERE fk.parent_object_id = OBJECT_ID(@ObjectName);
     END
-    ELSE IF @ObjectType = 'V'  -- View
+    ELSE IF @ObjectType = 'V' 
     BEGIN
-        -- Get view definition
         SELECT @SQL = OBJECT_DEFINITION(OBJECT_ID(@ObjectName));
 
-        -- Wrap with CREATE VIEW if not already
         SET @SQL = 'CREATE VIEW [' + @SchemaName + '].[' + @ObjectName + '] AS' + CHAR(13) + @SQL + CHAR(13);
     END
 
